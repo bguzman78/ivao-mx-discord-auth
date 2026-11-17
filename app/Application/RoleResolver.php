@@ -19,7 +19,9 @@ class RoleResolver
 
     public function hasEnoughHours(Member $member): bool
     {
-        return $member->getTotalHours() > config('brauth.min_hours');
+        $minimum = (float) config('brauth.min_hours', 0);
+
+        return $minimum <= 0 || $member->getTotalHours() > $minimum;
     }
 
     /**

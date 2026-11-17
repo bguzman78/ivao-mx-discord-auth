@@ -1,71 +1,66 @@
 <div class="consent-text">
-    <p>We use the Discord platform for the purpose of holding video and
-    audio conferences, trainings, exams, webinars and other types of
-    video and audio meetings. When selecting third-party providers and
-    their services, we observe the legal requirements.</p>
-    
-    <p>In this context, data of communication participants will be processed
-    and stored on the servers of third party providers, as far as they are
-    part of communication processes with us. This data may include, in
-    particular, registration and contact data, visual and vocal
-    contributions, as well as entries in chats and shared screen content</p>
-    
     <p>
-    <u>References to legal bases:</u>
+        Este servicio vincula tu cuenta de IVAO con tu cuenta de Discord
+        para gestionar tu acceso al servidor de IVAO México.
     </p>
+
+    <p><strong>Datos utilizados</strong></p>
+
     <p>
-    The use is based on consent and constitutes the legal basis of the
-    processing. Should further data be required, the user's consent is
-    required separately.
+        Según la información disponible en tu perfil de IVAO, el sistema
+        consulta tu VID, nombre, división, estado de cuenta, ratings,
+        horas de actividad y posiciones de staff. Algunas reglas también
+        pueden considerar autorizaciones GCA y la titularidad de
+        aerolíneas virtuales.
     </p>
-    
+
     <p>
-    An (automatic) deletion of the collected data will take place after the
-    deletion of the IVAO account.
+        También utiliza el identificador de tu cuenta de Discord y la
+        autorización necesaria para incorporarte al servidor.
+        La vinculación entre ambas cuentas se guarda para administrar
+        tu acceso y realizar sincronizaciones posteriores.
     </p>
-    
+
+    <p><strong>Uso de la información</strong></p>
+
     <ul>
-    <li>
-    <b>Processed data types</b>: first name, vid, content data (e.g. entries in
-    online forms), usage data (e.g. websites visited, interest in content,
-    access times), meta/communication data (e.g. device information,
-    IP addresses)
-    </li>
-    
-    <li>
-    <b>Persons concerned</b>: Users of online services (such as training)
-    </li>
-    
-    <li>
-    <b>Purposes of the processing</b>: provision of services, contact
-    requests and communication, daily administration, direct
-    marketing
-    </li>
-    
-    <li>
-    <b>Legal basis</b>: Consent (Art. 6 para. 1 sentence 1 lit. a. GDPR)
-    </li>
+        <li>Verificar que cumples con los requisitos de acceso.</li>
+        <li>Vincular tus cuentas de IVAO y Discord.</li>
+        <li>Gestionar tu incorporación al servidor.</li>
+        <li>Asignar o actualizar tus roles y apodo según las reglas configuradas.</li>
+        <li>Permitir que los administradores gestionen las cuentas vinculadas.</li>
     </ul>
-    
+
+    <p><strong>Uso de Discord</strong></p>
+
     <p>
-    <u>Right of withdrawal</u>
+        Tu actividad dentro de Discord se rige también por sus condiciones
+        y su
+        <a href="https://discord.com/privacy"
+           target="_blank"
+           rel="noopener noreferrer">política de privacidad</a>.
     </p>
-    
+
+    <p><strong>Cancelación de la vinculación</strong></p>
+
     <p>
-    The undersigned has the right to withdraw this consent at any time
-    with effect for the future without giving reasons. An e-mail to br-hq@ivao.aero is sufficient for this purpose. The lawfulness of the
-    processing carried out on the basis of the consent until the withdrawal
-    is not affected by the withdrawal.
+        Puedes solicitar la revocación desde la opción
+        <a href="{{ route('revoke') }}">Revocar acceso</a>.
+        Después de confirmar, las cuentas de Discord vinculadas a tu VID
+        serán retiradas del servidor y se eliminará su vinculación
+        en este sistema.
     </p>
-    
-    <p><u>Consequences of not signing</u></p>
-    
-    <p>The undersigned has the right to disagree with this declaration of
-    consent - however, since our service depends on the collection and
-    processing of the data mentioned at the beginning, non-signature
-    would preclude the use of the service.</p>
-    
-    <p>Discord: Instant Messaging, chat, voice and video conferencing; service
-    provider:: Discord, Inc., 444 De Haro St, Suite 200, San Francisco,
-    California 94107, USA; Website: https://discord.com/; Privacy
-    policy: https://discord.com/privacy.</p></div>
+
+    <p>
+        Esta acción no elimina tu cuenta de IVAO ni tu cuenta de Discord.
+    </p>
+
+    <p><strong>Aceptación</strong></p>
+
+    <p>
+        Al marcar la casilla de aceptación, autorizas el uso de la
+        información descrita para vincular tus cuentas y gestionar
+        tu acceso. Si no aceptas, no podrás continuar con la
+        verificación mediante este servicio.
+    </p>
+</div>

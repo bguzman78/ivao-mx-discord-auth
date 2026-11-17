@@ -6,12 +6,14 @@ return [
     'admin_vids' => array_values(array_filter(explode(':', (string) env('ADMIN_VIDS', '')))),
 
     // Members need more than this many pilot + ATC hours to join
-    'min_hours' => (float) env('MIN_HOURS', 5),
+    //'min_hours' => (float) env('MIN_HOURS', 5),
+    // Zero disables the hours requirement; otherwise members must exceed this value.
+    'min_hours' => (float) env('MIN_HOURS', 0),
 
     'sync' => [
         // Daily run of discord:sync, via "php artisan schedule:run"
         'time' => env('SYNC_TIME', '04:00'),
-        'timezone' => env('SYNC_TIMEZONE', 'America/Sao_Paulo'),
+        'timezone' => env('SYNC_TIMEZONE', 'America/Mexico_City'),
 
         // Pause between members to stay within IVAO and Discord rate limits
         'delay_ms' => (int) env('SYNC_DELAY_MS', 250),

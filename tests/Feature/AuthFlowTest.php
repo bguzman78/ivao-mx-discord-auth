@@ -171,6 +171,7 @@ class AuthFlowTest extends TestCase
 
     public function test_member_without_enough_hours_is_refused()
     {
+        config(['brauth.min_hours' => 5]);
         $this->saveRoleRules([['hash' => 'b', 'id' => ['901'], 'sulfix' => 'Member']]);
         Http::fake();
         $this->mockSocialite('discord', (new SocialiteUser)->setToken('t')->map(['id' => '555']));
@@ -186,6 +187,7 @@ class AuthFlowTest extends TestCase
 
     public function test_expected_refusals_are_not_reported_to_the_log_channel()
     {
+        config(['brauth.min_hours' => 5]);
         $this->saveRoleRules([['hash' => 'b', 'id' => ['901'], 'sulfix' => 'Member']]);
         Http::fake();
         $this->mockSocialite('discord', (new SocialiteUser)->setToken('t')->map(['id' => '555']));
