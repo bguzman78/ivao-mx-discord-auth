@@ -45,7 +45,7 @@ return [
     | utilizes the Monolog PHP logging library, which includes a variety
     | of powerful log handlers and formatters that you're free to use.
     |
-    | Available drivers: "single", "daily", "monthly", "slack", "syslog",
+    | Available drivers: "single", "daily", "slack", "syslog",
     |                    "errorlog", "monolog", "custom", "stack"
     |
     */
@@ -54,7 +54,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => explode(',', (string) env('LOG_STACK', env('LOG_DISCORD_WEBHOOK_URL') ? 'single,discord' : 'single')),
             'ignore_exceptions' => false,
         ],
 
@@ -69,15 +69,7 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'max_files' => env('LOG_DAILY_DAYS', 14),
-            'replace_placeholders' => true,
-        ],
-
-        'monthly' => [
-            'driver' => 'monthly',
-            'path' => storage_path('logs/laravel.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
-            'max_files' => 3,
+            'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
         ],
 
@@ -87,6 +79,16 @@ return [
             'username' => env('LOG_SLACK_USERNAME', env('APP_NAME', 'Laravel')),
             'emoji' => env('LOG_SLACK_EMOJI', ':boom:'),
             'level' => env('LOG_LEVEL', 'critical'),
+            'replace_placeholders' => true,
+        ],
+
+        'discord' => [
+            'driver' => 'slack',
+            // Discord webhooks accept Slack payloads on /slack
+            'url' => env('LOG_DISCORD_WEBHOOK_URL') ? rtrim(env('LOG_DISCORD_WEBHOOK_URL'), '/').'/slack' : null,
+            'username' => env('LOG_DISCORD_USERNAME', env('APP_NAME', 'Laravel')),
+            'emoji' => env('LOG_DISCORD_EMOJI', ':boom:'),
+            'level' => env('LOG_DISCORD_LEVEL', 'notice'),
             'replace_placeholders' => true,
         ],
 
