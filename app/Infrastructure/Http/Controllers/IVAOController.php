@@ -13,8 +13,9 @@ class IVAOController extends Controller
 {
     private $IVAOAPI;
 
-    public function __construct(IVAOApiServiceContract $IVAOAPI)
-    {
+    public function __construct(
+        IVAOApiServiceContract $IVAOAPI
+    ) {
         $this->IVAOAPI = $IVAOAPI;
     }
 
@@ -32,17 +33,32 @@ class IVAOController extends Controller
         try {
             $user = Socialite::driver('ivao')->user();
         } catch (InvalidStateException $e) {
-            // Expired or reused login link
-            Log::info('IVAO SSO state mismatch', ['event' => 'ivao.sso.invalid_state']);
+            Log::info('IVAO SSO state mismatch', [
+                'event' => 'ivao.sso.invalid_state'
+            ]);
+
             throw new InvalidIVAOTokenException();
         } catch (\Exception $e) {
-            Log::warning(get_class($e).': '.$e->getMessage(), ['event' => 'ivao.sso.failed']);
+            Log::warning(
+                get_class($e) . ': ' . $e->getMessage(),
+                ['event' => 'ivao.sso.failed']
+            );
+
             throw new InvalidIVAOTokenException();
         }
 
+        // Regenerate the session after successful authentication.
         $request->session()->regenerate();
+
+        // Store the authenticated IVAO profile.
         $this->IVAOAPI->storeUserData($user->getRaw());
 
+        // Resume Discord authorization if the user clicked Join Discord.
+        if ($request->session()->pull('discord_join_pending', false)) {
+            return redirect('/discord/login');
+        }
+
+        // Normal IVAO login continues to the homepage.
         return redirect('/');
     }
 }

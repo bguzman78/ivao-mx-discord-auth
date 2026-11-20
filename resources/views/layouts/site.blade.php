@@ -12,6 +12,11 @@
     <link rel="stylesheet" href="@versioned('css/app.css')">
     <link rel="stylesheet" href="@versioned('css/site.css')">
 
+    <link
+    rel="stylesheet"
+    href="{{ asset('css/ivao-auth-theme.css') }}"
+>
+
     <style>
         .site__brand.site__brand--mx {
             display: flex;

@@ -1,0 +1,242 @@
+
+/*
+|--------------------------------------------------------------------------
+| IVAO Mexico - Authentication Theme
+|--------------------------------------------------------------------------
+| Shared background and welcome screen styling.
+*/
+
+:root {
+    --mx-navy: #071d35;
+    --mx-panel: rgba(19, 22, 31, 0.94);
+    --mx-green: #006043;
+    --mx-text: #ffffff;
+    --mx-muted: #b9c5d4;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    background-color: #10274d !important;
+    background-image:
+        linear-gradient(
+            rgba(8, 19, 53, .24),
+            rgba(8, 19, 53, .43)
+        ),
+        url('/assets/imgs/ivaoback.jpg') !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+    background-attachment: fixed !important;
+}
+
+/* Welcome screen */
+
+.mx-welcome {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 20px;
+    color: var(--mx-text);
+    font-family: -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Arial, sans-serif;
+}
+
+.mx-welcome *,
+.mx-welcome *::before,
+.mx-welcome *::after {
+    box-sizing: border-box;
+}
+
+.mx-welcome__container {
+    width: 100%;
+    max-width: 490px;
+    text-align: center;
+}
+
+.mx-welcome__logo {
+    display: block;
+    width: min(340px, 85%);
+    height: auto;
+    max-height: 150px;
+    object-fit: contain;
+    margin: 0 auto 26px;
+}
+
+.mx-welcome__card {
+    background: var(--mx-panel);
+    border: 1px solid rgba(255, 255, 255, .09);
+    border-radius: 22px;
+    padding: 36px 30px;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, .27);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.mx-welcome__check {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, .13);
+    border: 1px solid rgba(34, 197, 94, .35);
+    color: #76e5aa;
+    font-size: 38px;
+}
+
+.mx-welcome__eyebrow {
+    margin: 0 0 12px;
+    color: #8ee2b9;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+}
+
+.mx-welcome__title {
+    margin: 0 0 15px;
+    font-size: clamp(25px, 5vw, 33px);
+    font-weight: 700;
+    letter-spacing: -.5px;
+    line-height: 1.2;
+}
+
+.mx-welcome__description {
+    color: var(--mx-muted);
+    font-size: 14px;
+    line-height: 1.7;
+    margin: 0 auto 25px;
+    max-width: 370px;
+}
+
+.mx-welcome__profile {
+    background: rgba(255, 255, 255, .045);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 13px;
+    padding: 14px 20px;
+    text-align: left;
+    margin-bottom: 24px;
+}
+
+.mx-welcome__detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 13px 0;
+    font-size: 14px;
+}
+
+.mx-welcome__detail + .mx-welcome__detail {
+    border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.mx-welcome__label {
+    color: var(--mx-muted);
+}
+
+.mx-welcome__detail strong {
+    color: white;
+    font-weight: 600;
+}
+
+.mx-welcome__roles {
+    padding-top: 17px;
+    margin-top: 5px;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.mx-welcome__roles-title {
+    display: block;
+    color: var(--mx-muted);
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.mx-welcome__role-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mx-welcome__role {
+    display: inline-block;
+    padding: 7px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, .1);
+}
+
+.mx-welcome__role--member {
+    color: #83e5ab;
+    background: rgba(34, 197, 94, .15);
+}
+
+.mx-welcome__role--staff {
+    color: #f4d46b;
+    background: rgba(234, 179, 8, .15);
+}
+
+.mx-welcome__role--foreign {
+    color: #ffaaa3;
+    background: rgba(239, 68, 68, .15);
+}
+
+.mx-welcome__button {
+    display: block;
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--mx-green);
+    color: #fff;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 11px;
+    transition: background .2s, transform .2s;
+}
+
+.mx-welcome__button:hover {
+    color: white;
+    background: #087d59;
+    transform: translateY(-2px);
+}
+
+.mx-welcome__button:focus-visible {
+    outline: 3px solid #8ee2b9;
+    outline-offset: 3px;
+}
+
+.mx-welcome__footer {
+    margin: 23px 0 0;
+    color: var(--mx-muted);
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+@media (max-width: 520px) {
+    body {
+        background-attachment: scroll !important;
+    }
+
+    .mx-welcome__card {
+        padding: 30px 20px;
+    }
+
+    .mx-welcome__profile {
+        padding: 12px 15px;
+    }
+
+    .mx-welcome__detail {
+        flex-wrap: wrap;
+    }
+}
+

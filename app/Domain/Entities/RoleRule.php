@@ -19,6 +19,7 @@ class RoleRule
     /** @var Collection<int, string> */
     private Collection $staff;
     private bool $includeTrial;
+    private bool $requiresMexicoStaff;
     private string $divisionMode;
     /** @var Collection<int, string> */
     private Collection $divisions;
@@ -35,6 +36,7 @@ class RoleRule
         $this->roles = self::strings($data['roles'] ?? []);
         $this->staff = self::strings($data['staff'] ?? []);
         $this->includeTrial = (bool) ($data['includeTrial'] ?? true);
+        $this->requiresMexicoStaff = (bool) ($data['requiresMexicoStaff'] ?? false);
         $this->divisionMode = in_array($data['divisionMode'] ?? null, [self::DIVISION_IN, self::DIVISION_NOT_IN], true)
             ? $data['divisionMode']
             : self::DIVISION_ANY;
@@ -77,6 +79,9 @@ class RoleRule
 
     public function matches(Member $member): bool
     {
+        if ($this->requiresMexicoStaff && ! $member->isMexicoStaff()) {
+            return false;
+        }
         if ($this->staff->isNotEmpty()
             && $member->getStaffPositions($this->includeTrial)->intersect($this->staff)->isEmpty()) {
             return false;
@@ -139,6 +144,7 @@ class RoleRule
             'roles' => $this->roles->all(),
             'staff' => $this->staff->all(),
             'includeTrial' => $this->includeTrial,
+            'requiresMexicoStaff' => $this->requiresMexicoStaff,
             'divisionMode' => $this->divisionMode,
             'divisions' => $this->divisions->all(),
             'minAtcRating' => $this->minAtcRating,

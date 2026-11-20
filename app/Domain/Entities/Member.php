@@ -264,6 +264,15 @@ class Member
         return $this->staff->isNotEmpty();
     }
 
+    public function isMexicoStaff(): bool
+{
+    return $this->getDivision() === 'MX'
+        && $this->getStaffPositions()->contains(
+            fn (string $position) =>
+                str_starts_with(strtoupper($position), 'MX-')
+        );
+}
+
     public function isActive() {
         return in_array($this->accountStatus, [
             self::STATUS_ACTIVE,

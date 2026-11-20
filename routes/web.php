@@ -18,7 +18,22 @@ Route::get('/discord/login', [DiscordController::class, 'login'])->middleware('a
 Route::get('/discord/callback', [DiscordController::class, 'loginCallback'])->middleware('auth');
 Route::post('/discord/interactions', DiscordInteractionController::class)->middleware(VerifyDiscordSignature::class);
 
-Route::view('/success', 'success');
+
+Route::get('/success', function () {
+    $verification = session('discord_verification');
+
+    // Prevent direct access without a completed verification.
+    if (!$verification) {
+        return redirect('/');
+    }
+
+    return view('success', [
+        'verification' => $verification,
+        'inviteUrl' => config('discord_join.invite_url'),
+        'roleLabels' => config('discord_join.role_labels', []),
+    ]);
+})->name('success');
+
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin', AdminController::class)->name('admin');
