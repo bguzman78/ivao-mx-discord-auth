@@ -1,0 +1,241 @@
+<?php
+
+
+namespace App\Infrastructure\Services;
+
+use App\Domain\Contracts\GuildServiceContract;
+use App\Domain\Entities\Guild;
+use App\Domain\Entities\Member;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class DiscordGuildService implements GuildServiceContract
+{
+    private const API_URL = 'https://discord.com/api/v10';
+
+    // Audit log entry for a nickname change, which keeps the value it had before
+    private const AUDIT_MEMBER_UPDATE = 24;
+
+    private $botToken;
+    private $guildId;
+    private $applicationId;
+    private $serverRoles;
+
+    public function __construct($botToken, $guildId, $applicationId = null)
+    {
+        $this->botToken = $botToken;
+        $this->guildId = $guildId;
+        $this->applicationId = $applicationId;
+    }
+
+    public function getGuildId()
+    {
+        return $this->guildId;
+    }
+
+    public function addMember(Member $member, Guild $guild)
+    {
+        $this->discord()->put("/guilds/{$guild->getId()}/members/{$member->getDiscordId()}", [
+            'access_token' => $member->getDiscordAccessToken(),
+        ]);
+
+        $member->getRoles()->each(function (string $roleId) use ($member, $guild) {
+            $this->addRole($member->getDiscordId(), $roleId, $guild);
+        });
+
+        if ($nickname = $member->generateNickname()) {
+            $this->setNickname($member->getDiscordId(), $nickname, $guild);
+        }
+    }
+
+    public function getMember(string $discordId, Guild $guild): ?array
+    {
+        try {
+            return $this->discord()->get("/guilds/{$guild->getId()}/members/{$discordId}")->json();
+        } catch (RequestException $e) {
+            if ($e->response->status() === 404) {
+                return null;
+            }
+
+            throw $e;
+        }
+    }
+
+    public function getMembers(array $discordIds, Guild $guild): array
+    {
+        $responses = Http::pool(fn ($pool) => array_map(
+            fn (string $discordId) => $pool->as($discordId)
+                ->withToken($this->botToken, 'Bot')
+                ->acceptJson()
+                ->timeout(15)
+                ->get(self::API_URL."/guilds/{$guild->getId()}/members/{$discordId}"),
+            array_values($discordIds)
+        ));
+
+        $members = [];
+
+        foreach ($responses as $discordId => $response) {
+            if ($response instanceof \Throwable) {
+                continue;
+            }
+
+            if ($response->successful()) {
+                $members[(string) $discordId] = $response->json();
+            } elseif ($response->status() === 404) {
+                $members[(string) $discordId] = null;
+            }
+            // Anything else, a rate limit included, is left for the single request to handle
+        }
+
+        return $members;
+    }
+
+    public function addRole(string $discordId, string $roleId, Guild $guild): bool
+    {
+        return $this->unlessAboveBot($discordId, "add role {$roleId}", function () use ($discordId, $roleId, $guild) {
+            $this->discord()->send('PUT', "/guilds/{$guild->getId()}/members/{$discordId}/roles/{$roleId}");
+        });
+    }
+
+    public function removeRole(string $discordId, string $roleId, Guild $guild): bool
+    {
+        return $this->unlessAboveBot($discordId, "remove role {$roleId}", function () use ($discordId, $roleId, $guild) {
+            $this->discord()->delete("/guilds/{$guild->getId()}/members/{$discordId}/roles/{$roleId}");
+        });
+    }
+
+    public function setNickname(string $discordId, string $nickname, Guild $guild): bool
+    {
+        return $this->unlessAboveBot($discordId, 'nickname', function () use ($discordId, $nickname, $guild) {
+            $this->discord()->patch("/guilds/{$guild->getId()}/members/{$discordId}", [
+                'nick' => $nickname,
+            ]);
+        });
+    }
+
+    public function getServerRoles(Guild $guild)
+    {
+        return $this->serverRoles ??= $this->discord()->get("/guilds/{$guild->getId()}/roles")->json();
+    }
+
+    public function getRolename(Guild $guild, string $roleId)
+    {
+        return Collection::make($this->getServerRoles($guild))->firstWhere('id', $roleId)['name'] ?? null;
+    }
+
+    public function removeFromServer($discordId, Guild $guild)
+    {
+        try {
+            return $this->discord()->delete("/guilds/{$guild->getId()}/members/{$discordId}");
+        } catch (RequestException $e) {
+            // Member already left the server
+            if ($e->response->status() === 404) {
+                return null;
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * The nickname each member had before it lost their name, read from the server audit
+     * log, which Discord keeps for 45 days.
+     *
+     * @return array<string, string> Discord id to the most recent nickname carrying a name
+     */
+    public function previousNicknames(Guild $guild, int $pages = 45): array
+    {
+        $entries = [];
+        $before = null;
+
+        for ($page = 0; $page < $pages; $page++) {
+            $batch = $this->discord()
+                ->get("/guilds/{$guild->getId()}/audit-logs", array_filter([
+                    'action_type' => self::AUDIT_MEMBER_UPDATE,
+                    'limit' => 100,
+                    'before' => $before,
+                ]))
+                ->json('audit_log_entries') ?? [];
+
+            if ($batch === []) {
+                break;
+            }
+
+            $entries = array_merge($entries, $batch);
+            $before = end($batch)['id'];
+        }
+
+        // Oldest first, so the most recent named nickname of each member is what remains
+        usort($entries, fn (array $a, array $b) => strcmp($a['id'], $b['id']));
+
+        $nicknames = [];
+
+        foreach ($entries as $entry) {
+            foreach ($entry['changes'] ?? [] as $change) {
+                if (($change['key'] ?? null) !== 'nick') {
+                    continue;
+                }
+
+                $previous = trim((string) ($change['old_value'] ?? ''));
+
+                if ($previous !== '' && ! str_starts_with($previous, '|') && ! str_starts_with($previous, '-')) {
+                    $nicknames[(string) $entry['target_id']] = $previous;
+                }
+            }
+        }
+
+        return $nicknames;
+    }
+
+    public function editInteractionResponse(string $interactionToken, string $content): void
+    {
+        Http::baseUrl(self::API_URL)
+            ->acceptJson()
+            ->patch("/webhooks/{$this->applicationId}/{$interactionToken}/messages/@original", [
+                'content' => $content,
+            ])
+            ->throw();
+    }
+
+    // Discord refuses changes to members whose top role is above the bot's (and to the server owner)
+    private function unlessAboveBot(string $discordId, string $change, callable $callback): bool
+    {
+        try {
+            $callback();
+
+            return true;
+        } catch (RequestException $e) {
+            if ($e->response->status() !== 403) {
+                throw $e;
+            }
+
+            Log::info([
+                'event' => 'discord.missing.permissions',
+                'discordId' => $discordId,
+                'change' => $change,
+            ]);
+
+            return false;
+        }
+    }
+
+    private function discord(): PendingRequest
+    {
+        return Http::baseUrl(self::API_URL)
+            ->withToken($this->botToken, 'Bot')
+            ->acceptJson()
+            // Wait out Discord's retry_after, a few times over: a full sync asks about
+            // thousands of members and one refusal costs that member their turn
+            ->retry(5, function (int $attempt, \Exception $e) {
+                return $e instanceof RequestException
+                    ? (int) ceil(($e->response->json('retry_after') ?? 1) * 1000) + 100 * $attempt
+                    : 1000;
+            }, function (\Exception $e) {
+                return $e instanceof RequestException && $e->response->status() === 429;
+            })
+            ->throw();
+    }
+}
