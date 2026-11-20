@@ -1,110 +1,326 @@
-<div align="right">
-  <img src="https://ivao.aero/publrelat/branding/svg_logos/br.svg" width="150">
-  <img align="left" src="https://seeklogo.com/images/D/discord-logo-B02E5FBA04-seeklogo.com.png" width="200">
+<div align="center">
+  <img src="public/assets/imgs/mxivao_logo_white.webp" alt="IVAO México" width="300">
+
+  # IVAO México — Discord Authentication
+
+  **Sistema de autenticación, vinculación y gestión de acceso al Discord oficial de IVAO México**
+
+  Laravel 13 · IVAO SSO · Discord OAuth2 · Asignación automática de roles
 </div>
 
-## About
+## Descripción
 
-This system provide a Discord Validation tool based on IVAO SSO for every IVAO Division. Members log in with their IVAO account, connect their Discord account and are added to the division server with roles and nickname based on their IVAO staff positions. Read the following topics in order to know how install it.
+**IVAO México Discord Authentication** permite a los miembros de IVAO vincular su identidad de IVAO con su cuenta de Discord y acceder al servidor oficial de la División México con los permisos correspondientes.
 
-## Requirements
+El flujo comienza con **Únete a Discord**: el usuario inicia sesión en IVAO (si todavía no tiene una sesión activa), autoriza su cuenta de Discord, y el sistema comprueba su perfil, vincula ambas cuentas y procesa los roles configurados. Al finalizar, muestra una pantalla de bienvenida con su nombre, VID, división y roles procesados, desde la cual puede abrir el servidor oficial.
 
-- PHP 8.4 (with `pdo_mysql`, `mbstring`, `openssl`, `curl` and `json`)
-- Composer 2
-- MySQL 5.7+ / MariaDB 10.3+
+El proyecto incluye un panel administrativo para gestionar las reglas de asignación y consultar a los miembros vinculados. La sincronización individual o programada permite mantener actualizados los roles administrados por el sistema.
 
-The system is built on [Laravel 12](https://laravel.com/docs/12.x); see its documentation for the full server requirements.
+## Flujo de autenticación
 
-## Installation
+1. El usuario accede a **Únete a Discord** mediante `/discord/login`.
+2. Si no tiene sesión IVAO, se autentica mediante **IVAO SSO** (`/ivao/login`).
+3. Autoriza la vinculación mediante **Discord OAuth2**.
+4. La aplicación valida su perfil IVAO, comprueba las condiciones configuradas y vincula su Discord con el VID.
+5. El bot incorpora al usuario al servidor cuando corresponde y agrega los roles calculados.
+6. Se presenta `/success`, con el resumen de la vinculación y un botón **Entrar al Discord oficial**.
 
-1. Clone this repository (or upload the source code) and point the web server document root to the `public` folder.
-2. Install dependencies with `composer install --no-dev --optimize-autoloader`.
-3. Create a `.env` file using `.env.example` as reference and set the following values:
-    - `APP_KEY`: generate it with `php artisan key:generate`. **Keep the same key when upgrading**: it is used to decrypt the saved role rules.
-    - `APP_URL`: the URL of your application, e.g. `https://discord.br.ivao.aero`.
-    - `IVAO_CLIENT_ID` / `IVAO_CLIENT_SECRET`: the credentials of your IVAO SSO application. Register `APP_URL/ivao/callback` as its redirect URI.
-    - `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`: the credentials of your [Discord Application](https://discord.com/developers/applications). Register `APP_URL/discord/callback` as its OAuth2 redirect URL.
-    - `DISCORD_BOT_TOKEN`: the token of the bot of that application.
-    - `DISCORD_GUILD_ID`: the ID of your server (right click the server name with Developer Mode on, then Copy ID).
-    - `ADMIN_VIDS`: the VIDs of the system admins separated by "**:**", for example `999999:999998`.
-    - `LANGUAGE`: the language you want to use, see `Language` topic below.
-    - `DEFAULT_TITLE`: the HTML title for pages. Words are separated by `_`, e.g. `IVAO_BR_Discord_Auth_System`.
-    - `LOG_DISCORD_WEBHOOK_URL` (optional): a Discord webhook that receives the application logs.
-    - `MIN_HOURS` (optional, default `5`): members need more than this many pilot + ATC hours to join.
-4. Run `php artisan migrate --force`.
-5. Cache the configuration for production: `php artisan optimize`. Run it again after every change to `.env`.
+La vinculación exige una cuenta IVAO elegible. Un VID se mantiene asociado a una sola cuenta Discord dentro de la política actual: al vincular otra cuenta Discord con el mismo VID, la cuenta anteriormente vinculada puede ser retirada del servidor.
 
-### Deployment
+## Reglas oficiales de IVAO México
 
-Every push to `main` runs the tests, installs the production dependencies and uploads the application by FTP (`.github/workflows/main.yml`). Configure the `Production` environment of the repository with:
+El panel administra tres tipos de acceso:
 
-- Secrets: `FTP_HOST`, `FTP_USERNAME`, `FTP_PASSWORD` and `SERVER_DIR` (the application folder, not `public`, ending with `/`)
-- Variable: `IS_DEPLOYMENT_ENABLED` set to `true`
+| Rol de Discord | Condición |
+| --- | --- |
+| `MX-Member` | Usuario cuya división IVAO sea `MX`. |
+| `MX-Staff` | Usuario de la división `MX` con una posición oficial cuyo identificador comienza por `MX-`. Incluye posiciones en periodo de prueba (`onTrial`). |
+| `F-Member` | Usuario de una división distinta de `MX`. |
 
-`.env` and `storage/` are never uploaded. Run `php artisan migrate --force` on the server when a new migration is added.
+Las reglas se evalúan de manera independiente. Por lo tanto, un miembro del staff mexicano puede recibir **`MX-Member` y `MX-Staff` simultáneamente**. Un miembro de otra división recibe `F-Member` según las reglas actuales.
 
-### Upgrading from the Laravel 7 version
+El sistema utiliza los roles gestionados por sus reglas; los permisos de acceso a categorías y canales deben configurarse también dentro de Discord. **La vinculación no impide por sí sola que alguien entre mediante una invitación normal**, pero los canales internos pueden restringirse a miembros verificados mediante sus roles.
 
-1. In `.env`, add `IVAO_CLIENT_ID` and `IVAO_CLIENT_SECRET`. Keep `APP_KEY` and `storage/app/roles`.
-2. Deploy, then delete the old caches on the server: `rm -f bootstrap/cache/*.php`.
-3. Switch the site to PHP 8.4.
+### Roles del servidor
 
-## Local development
+Los nombres e IDs actualmente configurados son:
+
+| Rol | ID de Discord |
+| --- | --- |
+| `MX-Member` | `1555793312064082030` |
+| `MX-Staff` | `1555794617994186822` |
+| `F-Member` | `1555793918786928691` |
+
+Estos identificadores pertenecen a la configuración actual de IVAO México y deben revisarse si el bot se instala en otro servidor. Las etiquetas mostradas en la pantalla de bienvenida se definen en `config/discord_join.php`.
+
+## Funcionalidades
+
+- Inicio de sesión con **IVAO SSO** y autorización con **Discord OAuth2**.
+- Asociación entre VID de IVAO y cuenta de Discord.
+- Validación del estado de la cuenta IVAO y de las condiciones de acceso.
+- Asignación automática de roles `MX-Member`, `MX-Staff` y `F-Member`.
+- Identificación de posiciones oficiales mexicanas, incluidas posiciones en prueba.
+- Actualización del nickname en Discord según los datos disponibles del perfil IVAO.
+- Página de bienvenida personalizada con VID, división y roles procesados.
+- Panel `/admin` para reglas y miembros vinculados.
+- Sincronización manual, individual y mediante tareas programadas.
+- Comando `/sync` de Discord, sujeto a su configuración y registro.
+- Interfaz de autenticación con identidad visual de IVAO México.
+
+## Tecnologías y requisitos
+
+- **PHP 8.4 o compatible con las dependencias fijadas en `composer.lock`**.
+- **Composer 2**.
+- **Laravel 13**.
+- **MySQL o MariaDB** con una versión compatible con el proyecto.
+- Extensiones de PHP requeridas por Laravel y sus dependencias.
+- Un servidor web con **HTTPS** y document root dirigido a la carpeta `public/`.
+- Aplicación IVAO SSO autorizada.
+- Aplicación de Discord con OAuth2 y bot agregado al servidor.
+
+Antes de desplegar en Plesk, verificar las versiones y extensiones disponibles con `php -v`, `composer check-platform-reqs` y la configuración PHP del dominio. La versión declarada en `composer.json` es Laravel 13 y el requisito de PHP es `^8.4`.
+
+## Instalación
+
+### 1. Obtener el proyecto
+
+```bash
+git clone git@github.com:bguzman78/ivao-mx-discord-auth.git
+cd ivao-mx-discord-auth
+git switch main
+```
+
+### 2. Instalar dependencias
+
+Para desarrollo:
 
 ```bash
 composer install
-cp .env.example .env && php artisan key:generate
-php artisan migrate
-php artisan serve        # http://localhost:8000
-php artisan test
+npm ci
 ```
 
-For local testing, register `http://localhost:8000/ivao/callback` and `http://localhost:8000/discord/callback` as redirect URIs.
+Para producción:
 
-## Notes
+```bash
+composer install --no-dev --optimize-autoloader
+```
 
-- To add the db.division.ivao.aero if it's not added, you can go to Remote MySQL on cPanel/Plesk and add the access Host.
+Los archivos estáticos de la interfaz que necesita la aplicación deben estar presentes en `public/` al desplegar. Verificar cualquier compilación de assets necesaria para la versión publicada.
 
-## Using
+### 3. Preparar las variables de entorno
 
-1. Add the bot to your server (you can use this [permission calculator](https://discordapi.com/permissions.html) to generate the URL; it requires the **CLIENT_ID**). The bot needs **Manage Roles**, **Manage Nicknames** and **Create Instant Invite**.
-2. In the server settings, place the bot role above every role it should hand out. The bot cannot change members ranked above its own role; those members still join, but their roles and nickname are left as they are.
-3. Open `/admin` with a VID listed in `ADMIN_VIDS`.
-4. Under **Rules**, create a rule for each group of members and choose the Discord roles it gives. A rule can combine:
-   - staff positions (e.g. `BR-WM`, `BR-AWM`, or HQ positions such as `WD6`), with or without trial positions;
-   - division (any, only or except the listed divisions);
-   - minimum ATC and pilot ratings and minimum hours;
-   - GCA and virtual airline ownership.
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-   A rule without conditions applies to every member who can join. Roles with administrator permission cannot be used, and roles that are not in any rule are never changed.
-5. Under **Members**, search linked accounts, see what the next sync would change, sync a member immediately or remove them from the server.
+Configurar los valores reales de cada entorno. Como referencia, la instalación de IVAO México utiliza:
 
-### Automatic sync
+```dotenv
+APP_NAME="IVAO Mexico Discord Auth"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://DOMINIO-DE-PRODUCCION
 
-`php artisan discord:sync` updates the roles and nicknames of every linked member from their IVAO data, adding and removing only the roles controlled by the rules. Members whose IVAO account is suspended, inactive or deleted lose those roles. Nothing is removed when IVAO or Discord cannot be reached.
+LANGUAGE=es
+DEFAULT_TITLE=IVAO_Mexico_Discord_Auth
 
-The command is scheduled daily at `SYNC_TIME` (default `04:00`, `America/Sao_Paulo`). In Plesk, add a **Scheduled Task** that runs `php artisan schedule:run` every minute (or runs `php artisan discord:sync` once a day) with the site PHP version. `php artisan discord:sync 123456` syncs a single VID.
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=BASE_DE_DATOS
+DB_USERNAME=USUARIO_DB
+DB_PASSWORD=CLAVE_DB
 
-### /sync command
+IVAO_CLIENT_ID=
+IVAO_CLIENT_SECRET=
+IVAO_SCOPES="profile configuration"
 
-Members can refresh their own roles with `/sync` in Discord.
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+DISCORD_BOT_TOKEN=
+DISCORD_GUILD_ID=
+DISCORD_PUBLIC_KEY=
+DISCORD_INVITE_URL=https://discord.gg/pjDGxgEKqf
 
-1. Set `DISCORD_PUBLIC_KEY` to the **Public Key** from the Discord Developer Portal (General Information) and deploy.
-2. In the same page, set **Interactions Endpoint URL** to `APP_URL/discord/interactions`. Discord checks the endpoint when you save.
-3. Run `php artisan discord:register-commands` once.
+ADMIN_VIDS=367964
+MIN_HOURS=0
+SYNC_TIME=04:00
+SYNC_TIMEZONE=America/Mexico_City
+```
 
-The command replies after the response is sent to Discord, which works best with PHP running as **FPM** in Plesk.
+**Importante:** los valores anteriores son una plantilla. Nunca copiar secretos de desarrollo a un repositorio ni publicar el `.env`. Ajustar la configuración de base de datos, dominio, IDs y permisos según el servidor real.
 
-## Language
+La **`APP_KEY` de producción debe conservarse** durante futuras actualizaciones: también se utiliza para descifrar las reglas guardadas. El archivo `storage/app/roles` y demás datos persistentes deben mantenerse entre despliegues.
 
-Actually the system has some languages available according the following list:
+### 4. Configurar las URLs de retorno
 
-- English (en);
-- Portuguese - Brazil (pt-Br);
-- Spanish (es) (Credits to member: **548746** by the help);
+Registrar en **IVAO SSO**:
 
-The actual language is seted by env variable `LANGUAGE`.
+```text
+https://DOMINIO-DE-PRODUCCION/ivao/callback
+```
 
-## Inserting new Languages
+Registrar en **Discord Developer Portal → OAuth2**:
 
-To insert new languages you need to make a copy from `lang/en` folder to new folder with prefix of the new language, for example: `lang/fr` for French. After that just edit the file `text.php` and translate the entries of language array.
+```text
+https://DOMINIO-DE-PRODUCCION/discord/callback
+```
+
+La ruta `/discord/login` inicia la vinculación. Si no existe sesión IVAO, la aplicación continúa primero por el SSO de IVAO y retoma después la autorización de Discord.
+
+En desarrollo local, usar exactamente el mismo host configurado en `APP_URL` y en los redirect URIs; por ejemplo, `http://127.0.0.1:8000`.
+
+### 5. Preparar la base de datos y la caché
+
+```bash
+php artisan migrate --force
+php artisan optimize
+```
+
+Para el entorno local, las migraciones se pueden ejecutar sin `--force`.
+
+### 6. Configurar el bot en Discord
+
+1. Agregar el bot de la aplicación al servidor oficial.
+2. Conceder los permisos necesarios para **gestionar roles y nicknames**.
+3. Colocar el rol del bot **por encima de los roles que debe asignar**, sin darle permisos administrativos innecesarios.
+4. Configurar las categorías y canales para que `@everyone` no tenga acceso a áreas internas que requieran verificación.
+5. Mantener visible el canal de instrucciones `#verifica-tu-cuenta` para usuarios sin roles.
+
+**Nota:** por las restricciones de jerarquía de Discord, el bot no podrá modificar roles o nicknames de usuarios con una posición superior a la suya.
+
+## Panel de administración
+
+La administración está disponible en:
+
+```text
+/admin
+```
+
+El acceso se limita a los VIDs configurados en `ADMIN_VIDS`, separados por `:` cuando existan varios administradores.
+
+Desde el panel es posible:
+
+- Gestionar las reglas de asignación de roles.
+- Consultar miembros vinculados y su información de IVAO y Discord.
+- Revisar cambios esperados en roles y nickname.
+- Iniciar sincronizaciones individuales o solicitar una sincronización general.
+- Gestionar la desvinculación de cuentas según las opciones disponibles.
+
+Las **reglas actuales de IVAO México están diseñadas para los tres roles definidos anteriormente** y no exigen configurar manualmente ratings, horas, posiciones de staff o titularidad de aerolíneas virtuales.
+
+## Sincronización de miembros
+
+Para actualizar los usuarios vinculados:
+
+```bash
+php artisan discord:sync
+```
+
+Para sincronizar únicamente un VID:
+
+```bash
+php artisan discord:sync 367964
+```
+
+La sincronización revisa los datos IVAO y actualiza los roles administrados por las reglas. Los roles externos a la gestión de esta aplicación no deben alterarse por ese proceso.
+
+**Precaución:** antes de habilitar una sincronización general en el servidor oficial, validar con usuarios de prueba los casos de miembro MX, staff MX, miembro extranjero, perfiles con información oculta y cambio de estado de cuenta.
+
+### Programación en Plesk
+
+La configuración del proyecto utiliza por defecto:
+
+```dotenv
+SYNC_TIME=04:00
+SYNC_TIMEZONE=America/Mexico_City
+```
+
+El servidor debe ejecutar el scheduler de Laravel. En **Plesk → Scheduled Tasks**, configurar una tarea que invoque:
+
+```bash
+php artisan schedule:run
+```
+
+Cada minuto, utilizando el binario PHP que corresponda a la versión del dominio y la ruta correcta de la aplicación. La programación no queda activa por el solo hecho de subir los archivos a producción.
+
+### Comando `/sync` dentro de Discord
+
+Para permitir que un miembro solicite la actualización de sus roles:
+
+1. Configurar `DISCORD_PUBLIC_KEY` con la clave pública de la aplicación Discord.
+2. Registrar en Discord el endpoint de interacciones `https://DOMINIO-DE-PRODUCCION/discord/interactions`.
+3. Ejecutar una vez:
+
+```bash
+php artisan discord:register-commands
+```
+
+El endpoint requiere HTTPS público y una configuración válida de verificación de firmas.
+
+## Interfaz de autenticación
+
+La experiencia se presenta en español e incorpora los recursos visuales de IVAO México:
+
+- Logotipo: `public/assets/imgs/mxivao_logo_white.webp`.
+- Fondo inspirado en el inicio de sesión de IVAO: `public/assets/imgs/ivaoback.jpg`.
+- Estilos compartidos: `public/css/ivao-auth-theme.css`.
+- Pantalla de éxito: `resources/views/success.blade.php`.
+
+La pantalla `/success` muestra información temporal de la vinculación. No debe considerarse una verificación independiente de que Discord haya aplicado todos los roles calculados si no se realiza una consulta de confirmación adicional.
+
+## Desarrollo local
+
+```bash
+composer install
+npm ci
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve
+```
+
+Ajustar las variables IVAO, Discord y base de datos antes de probar OAuth. Para validar el proyecto:
+
+```bash
+php artisan test
+php artisan route:list
+```
+
+## Despliegue a producción
+
+El código estable se mantiene en la rama **`main`** del repositorio de IVAO México. El despliegue en el Plesk oficial debe configurarse por separado; **publicar un commit en GitHub no despliega automáticamente la aplicación**.
+
+Antes de habilitar el dominio público:
+
+1. Verificar PHP, Composer y extensiones del servidor.
+2. Configurar un directorio seguro y apuntar el document root a `public/`.
+3. Crear el `.env` de producción fuera del repositorio.
+4. Mantener los directorios de almacenamiento y los datos persistentes entre versiones.
+5. Configurar HTTPS y los callbacks definitivos de IVAO y Discord.
+6. Verificar que el bot conserva su jerarquía y permisos en el servidor.
+7. Ejecutar migraciones y limpiar/reconstruir cachés cuando corresponda.
+8. Probar una vinculación individual antes de habilitar sincronizaciones programadas.
+
+No se debe asumir que un workflow FTP o CI/CD de otra división está habilitado para este repositorio sin haberlo configurado y validado previamente.
+
+## Seguridad y consideraciones operativas
+
+- No versionar `.env`, claves OAuth, tokens de bot, claves de sesión o contraseñas.
+- Mantener `APP_DEBUG=false` en producción.
+- Proteger `/admin` por autenticación IVAO y autorización por VID.
+- Limitar los roles asignables y conservar las restricciones de jerarquía de Discord.
+- Restringir canales internos mediante permisos de categorías y canales en Discord.
+- Comprobar que las reglas se guardan correctamente antes de ejecutar sincronizaciones generales.
+- Conservar copias de seguridad de la configuración y de los datos persistentes.
+
+## Créditos y origen del proyecto
+
+**Proyecto original:** [IVAO Brasil — ivao-discord-auth](https://github.com/ivao-brasil/ivao-discord-auth), desarrollado y publicado por la comunidad de **IVAO Brasil**. Gracias a sus autores y colaboradores por la base del sistema de autenticación y gestión de acceso a Discord.
+
+**Adaptación para IVAO México:** **Chilam Guzmán** — adaptación funcional, integración de la identidad de la División México, lógica de membresía y staff mexicano, reglas de roles, flujo IVAO SSO → Discord OAuth2, experiencia de bienvenida y ajustes del panel administrativo.
+
+Repositorio de la adaptación: [bguzman78/ivao-mx-discord-auth](https://github.com/bguzman78/ivao-mx-discord-auth).
+
+Se mantiene el reconocimiento al proyecto de origen y a sus contribuyentes. El proyecto declara licencia **MIT** en `composer.json`; deben respetarse también las condiciones y avisos de licencia aplicables al código original.
